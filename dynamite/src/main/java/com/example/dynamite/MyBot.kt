@@ -31,6 +31,9 @@ class MyBot : Bot {
     var theirDynamite = 100
 
     var opponentDrawLengthBeforeDynamite = listOf<Int>()
+    var drawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+    var opponentDynamiteByDrawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+    var opponentWaterByDrawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
 
     var outcomeLog = listOf<Outcome>()
 
@@ -59,10 +62,18 @@ class MyBot : Bot {
     }
 
     fun determineWinnerOfLastRound(outcome: Round) {
+         if (drawTally > 0) {
+             drawLengthCount[drawTally - 1] += 1
+
+             if (outcome.p2 == Move.W) opponentWaterByDrawLengthCount[drawTally-1] += 1
+         }
+
         if (outcome.p2 == Move.D) theirDynamite --
         if (outcome.p2 == Move.D && drawTally != 0) {
             opponentDrawLengthBeforeDynamite += drawTally
+            opponentDynamiteByDrawLengthCount[drawTally-1] += 1
         }
+
 
         if (outcome.p1 == outcome.p2) {
             drawTally++
@@ -160,29 +171,24 @@ class MyBot : Bot {
             break
         }
 
-//        var r = randomDouble()
-//
-//        if (r < probToPlayDynamite(sequenceLength) && dynamiteRemaining > 0) {
-//            dynamiteRemaining--
-//            return Move.D
-//        } else if (ourMove != null) {
-//            return ourMove
-//        }
-
         val mostCommonDrawLengthBeforeOpponentDynamite = opponentDrawLengthBeforeDynamite.average()
 
-        if (drawTally > 0) {
+        if (drawTally > 0 && sequenceLength < 20) {
             if (mostCommonDrawLengthBeforeOpponentDynamite < 1 && dynamiteRemaining > 0 && randomDouble() < 0.5) {
                 dynamiteRemaining--
                 return Move.D
             }
-            else if (drawTally >= mostCommonDrawLengthBeforeOpponentDynamite && theirDynamite > 0) {
+            else if (opponentDynamiteByDrawLengthCount[drawTally - 1]/(drawLengthCount[drawTally - 1]+0.00001) >= randomDouble() && theirDynamite > 0) {
                 return Move.W
             }
-            else if (drawTally <= mostCommonDrawLengthBeforeOpponentDynamite - 1 && dynamiteRemaining > 0) {
+            else if (dynamiteRemaining > 0 && opponentWaterByDrawLengthCount[drawTally-1]/(drawLengthCount[drawTally-1]+0.00001) < randomDouble()){
                 dynamiteRemaining--
                 return Move.D
             }
+//            else if (drawTally <= mostCommonDrawLengthBeforeOpponentDynamite - 1 && dynamiteRemaining > 0) {
+//                dynamiteRemaining--
+//                return Move.D
+//            }
         }
 
         if (ourMove != null) return ourMove
