@@ -3,17 +3,9 @@ package com.example.dynamite
 import com.softwire.dynamite.bot.Bot
 import com.softwire.dynamite.game.Gamestate
 import com.softwire.dynamite.game.Move
-import kotlin.random.Random
 
 class MyBot : Bot {
-    override fun makeMove(gamestate: Gamestate): Move {
-        // Are you debugging?
-        // Put a breakpoint in this method to see when we make a move
-
-        // We're playerone
-        val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
-        val lookbackDistance = 3
-
+    fun predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance: Int, opponentsMoves: List<Move>): Move? {
         if (opponentsMoves.size > lookbackDistance) {
             val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
             // Look for mostRecentMoves in opponentsMoves
@@ -23,16 +15,27 @@ class MyBot : Bot {
                     if (opponentsMoves[i+offset] != mostRecentMoves[offset]) matchFound =false
                 }
                 if (!matchFound) continue
-
-                val opponentsNextMove = opponentsMoves[i+lookbackDistance]
-
-                if (opponentsNextMove == Move.S) return Move.R
-                if (opponentsNextMove == Move.R) return Move.P
-                if (opponentsNextMove == Move.P) return Move.S
-                if (opponentsNextMove == Move.D) return Move.W
+                return opponentsMoves[i+lookbackDistance]
             }
         }
-        return Move.S
+        return null
+    }
+
+    override fun makeMove(gamestate: Gamestate): Move {
+        // Are you debugging?
+        // Put a breakpoint in this method to see when we make a move
+
+        // We're playerone
+        val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
+        val opponentsNextMove = predictOpponentsNextMoveFromLookbackDistanceOf(3, opponentsMoves)
+
+        return when (opponentsNextMove) {
+            Move.S -> Move.R
+            Move.R -> Move.P
+            Move.P -> Move.S
+            Move.D -> Move.W
+            else -> Move.S
+        }
     }
 
     init {
