@@ -12,18 +12,22 @@ class MyBot : Bot {
 
         // We're playerone
         val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
-        
-        if (opponentsMoves.size > 3) {
-            val mostRecentMoves = opponentsMoves.takeLast(3)
-            // Look for mostRecentMoves in opponentsMoves
-            for (i in 0..opponentsMoves.size-4) {
-                if (opponentsMoves[i] == mostRecentMoves[0] && opponentsMoves[i+1] == mostRecentMoves[1] && opponentsMoves[i+2] == mostRecentMoves[2]) {
-                    val opponentsNextMove = opponentsMoves[i+3]
+        val lookbackDistance = 3
 
-                    if (opponentsNextMove == Move.S) return Move.R
-                    if (opponentsNextMove == Move.R) return Move.P
-                    if (opponentsNextMove == Move.P) return Move.S
+        if (opponentsMoves.size > 3) {
+            val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
+            // Look for mostRecentMoves in opponentsMoves
+            for (i in 0..opponentsMoves.size-(lookbackDistance+1)) {
+
+                for (offset in 0 until lookbackDistance) {
+                    if (opponentsMoves[i+offset] != mostRecentMoves[offset]) break
                 }
+
+                val opponentsNextMove = opponentsMoves[i+lookbackDistance]
+
+                if (opponentsNextMove == Move.S) return Move.R
+                if (opponentsNextMove == Move.R) return Move.P
+                if (opponentsNextMove == Move.P) return Move.S
             }
         }
         return Move.S
