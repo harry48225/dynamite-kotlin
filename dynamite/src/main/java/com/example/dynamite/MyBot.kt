@@ -52,7 +52,7 @@ class MyBot : Bot {
 
         val probabilty = min(MAX_DYNAMTIE_PROBABILITY, (drawTally)*exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
 
-        return probabilty
+        return baseProbability
     }
 
     fun predictNumberOfRoundsLeft(): Int {
@@ -62,23 +62,28 @@ class MyBot : Bot {
     }
 
     fun determineWinnerOfLastRound(outcome: Round) {
-         if (drawTally > 0) {
-             drawLengthCount[drawTally - 1] += 1
 
-             if (outcome.p2 == Move.W) opponentWaterByDrawLengthCount[drawTally-1] += 1
-         }
+
 
         if (outcome.p2 == Move.D) theirDynamite --
-        if (outcome.p2 == Move.D && drawTally != 0) {
-            opponentDrawLengthBeforeDynamite += drawTally
-            opponentDynamiteByDrawLengthCount[drawTally-1] += 1
-        }
-
 
         if (outcome.p1 == outcome.p2) {
             drawTally++
             outcomeLog += Outcome.DRAW
             return
+        } else {
+            if (outcome.p2 == Move.D && drawTally != 0) {
+                opponentDrawLengthBeforeDynamite += drawTally
+                opponentDynamiteByDrawLengthCount[drawTally-1] += 1
+            }
+
+
+             if (drawTally > 0) {                                                               
+                 drawLengthCount[drawTally - 1] += 1                                            
+                                                                                                
+                 if (outcome.p2 == Move.W) opponentWaterByDrawLengthCount[drawTally-1] += 1     
+             }                                                                                  
+
         }
 
         //println(predictNumberOfRoundsLeft() + ourScore + theirScore)
@@ -162,7 +167,6 @@ class MyBot : Bot {
                 Move.S -> Move.R
                 Move.R -> Move.P
                 Move.P -> Move.S
-                Move.D -> Move.W
                 else -> Move.S
             }
 
@@ -178,7 +182,7 @@ class MyBot : Bot {
                 dynamiteRemaining--
                 return Move.D
             }
-            else if (opponentDynamiteByDrawLengthCount[drawTally - 1]/(drawLengthCount[drawTally - 1]+0.00001) >= randomDouble() && theirDynamite > 0) {
+            else if (opponentDynamiteByDrawLengthCount[drawTally - 1]/(drawLengthCount[drawTally - 1]+0.00001) > randomDouble() && theirDynamite > 0) {
                 return Move.W
             }
             else if (dynamiteRemaining > 0 && opponentWaterByDrawLengthCount[drawTally-1]/(drawLengthCount[drawTally-1]+0.00001) < randomDouble()){
@@ -189,9 +193,21 @@ class MyBot : Bot {
 //                dynamiteRemaining--
 //                return Move.D
 //            }
+        } else if (randomDouble() <= probToPlayDynamite(sequenceLength)/4 && dynamiteRemaining > 0){
+            dynamiteRemaining--;
+            return Move.D
         }
 
+
+
+
         if (ourMove != null) return ourMove
+
+        val r = randomDouble()
+        if (r < 0.33) return Move.S
+        if (r < 0.66) return Move.R
+        if (r < 1) return Move.P
+
         return Move.S
     }
 
