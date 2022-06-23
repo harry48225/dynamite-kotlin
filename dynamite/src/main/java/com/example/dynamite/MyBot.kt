@@ -3,8 +3,12 @@ package com.example.dynamite
 import com.softwire.dynamite.bot.Bot
 import com.softwire.dynamite.game.Gamestate
 import com.softwire.dynamite.game.Move
+import java.lang.Integer.max
+import java.lang.Integer.min
 
 class MyBot : Bot {
+    val MAX_LOOKBACK = 10
+
     fun predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance: Int, opponentsMoves: List<Move>): Move? {
         if (opponentsMoves.size > lookbackDistance) {
             val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
@@ -27,15 +31,21 @@ class MyBot : Bot {
 
         // We're playerone
         val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
-        val opponentsNextMove = predictOpponentsNextMoveFromLookbackDistanceOf(3, opponentsMoves)
 
-        return when (opponentsNextMove) {
-            Move.S -> Move.R
-            Move.R -> Move.P
-            Move.P -> Move.S
-            Move.D -> Move.W
-            else -> Move.S
+        for (lookbackDistance in min(MAX_LOOKBACK, max(opponentsMoves.size-2, 1)) downTo 1) {
+            val opponentsNextMove = predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance, opponentsMoves)
+            if (opponentsNextMove == null) continue
+
+            return when (opponentsNextMove) {
+                Move.S -> Move.R
+                Move.R -> Move.P
+                Move.P -> Move.S
+                Move.D -> Move.W
+                else -> Move.S
+            }
         }
+
+        return Move.S
     }
 
     init {
