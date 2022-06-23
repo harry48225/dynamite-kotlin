@@ -7,6 +7,8 @@ import com.softwire.dynamite.game.Round
 import java.lang.Exception
 import java.lang.Integer.max
 import java.lang.Integer.min
+import java.lang.Double.min
+import kotlin.math.floor
 
 class MyBot : Bot {
     val MAX_LOOKBACK = 20
@@ -19,11 +21,19 @@ class MyBot : Bot {
 //        val expectedRemainingNumberOfRounds = min()
 //    }
 
+    fun predictNumberOfRoundsLeft(): Int {
+        val ourWinProportion = ourScore.toDouble() / (ourScore + theirScore)
+        val theirWinProportion = theirScore.toDouble() / (ourScore + theirScore)
+        return floor(min((1000-ourScore)/ourWinProportion, (1000-theirScore)/theirWinProportion)).toInt()
+    }
+
     fun determineWinnerOfLastRound(outcome: Round) {
         if (outcome.p1 == outcome.p2) {
             drawTally++
             return
         }
+
+        println(predictNumberOfRoundsLeft() + ourScore + theirScore)
 
         val prize = 1 + drawTally
         drawTally = 0
