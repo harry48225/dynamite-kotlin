@@ -15,6 +15,7 @@ class MyBot : Bot {
     val MAX_LOOKBACK = 20
     val RANDOM_THRESHOLD = 12
     var dynamiteRemaining = 100
+    val MAX_DYNAMTIE_PROBABILITY = 1.0
     var ourScore = 0
     var theirScore = 0
     var drawTally =  0
@@ -27,7 +28,7 @@ class MyBot : Bot {
 
        val a = ((-2)*Math.log(baseProbability))/RANDOM_THRESHOLD
 
-        val probabilty = min(1.0, exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
+        val probabilty = min(MAX_DYNAMTIE_PROBABILITY, exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
 
         return probabilty
     }
@@ -95,7 +96,7 @@ class MyBot : Bot {
 
     override fun makeMove(gamestate: Gamestate): Move {
 
-        print(dynamiteRemaining.toString()+",")
+        //print(dynamiteRemaining.toString()+",")
         // Determine winner of last round
         if (gamestate.rounds.size > 0) determineWinnerOfLastRound(gamestate.rounds.last())
         // Are you debugging?
