@@ -14,7 +14,7 @@ class MyBot : Bot {
         val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
         val lookbackDistance = 3
 
-        if (opponentsMoves.size > 3) {
+        if (opponentsMoves.size > lookbackDistance) {
             val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
             // Look for mostRecentMoves in opponentsMoves
             for (i in 0..opponentsMoves.size-(lookbackDistance+1)) {
@@ -29,6 +29,7 @@ class MyBot : Bot {
                 if (opponentsNextMove == Move.S) return Move.R
                 if (opponentsNextMove == Move.R) return Move.P
                 if (opponentsNextMove == Move.P) return Move.S
+                if (opponentsNextMove == Move.D) return Move.W
             }
         }
         return Move.S
