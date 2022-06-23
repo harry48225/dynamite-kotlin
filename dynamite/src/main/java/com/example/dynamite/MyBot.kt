@@ -5,21 +5,32 @@ import com.softwire.dynamite.game.Gamestate
 import com.softwire.dynamite.game.Move
 import com.softwire.dynamite.game.Round
 import java.lang.Exception
-import java.lang.Integer.max
-import java.lang.Integer.min
-import java.lang.Double.min
+import java.lang.Integer.*
+import kotlin.math.exp
 import kotlin.math.floor
+import kotlin.math.min
+import kotlin.random.Random
 
 class MyBot : Bot {
     val MAX_LOOKBACK = 20
+    val RANDOM_THRESHOLD = 12
     var dynamiteRemaining = 100
     var ourScore = 0
     var theirScore = 0
     var drawTally =  0
 
-//    fun probToPlayDynamite(sequenceLengthFound: Int) {
-//        val expectedRemainingNumberOfRounds = min()
-//    }
+    fun probToPlayDynamite(sequenceLengthFound: Int): Double {
+       val numberOfRoundsLeft = predictNumberOfRoundsLeft()
+
+       // Need to do draws
+       val baseProbability = dynamiteRemaining.toDouble() / numberOfRoundsLeft
+
+       val a = ((-2)*Math.log(baseProbability))/RANDOM_THRESHOLD
+
+        val probabilty = min(1.0, exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
+
+        return probabilty
+    }
 
     fun predictNumberOfRoundsLeft(): Int {
         val ourWinProportion = ourScore.toDouble() / (ourScore + theirScore)
@@ -33,7 +44,7 @@ class MyBot : Bot {
             return
         }
 
-        println(predictNumberOfRoundsLeft() + ourScore + theirScore)
+        //println(predictNumberOfRoundsLeft() + ourScore + theirScore)
 
         val prize = 1 + drawTally
         drawTally = 0
@@ -83,6 +94,8 @@ class MyBot : Bot {
     }
 
     override fun makeMove(gamestate: Gamestate): Move {
+
+        print(dynamiteRemaining.toString()+",")
         // Determine winner of last round
         if (gamestate.rounds.size > 0) determineWinnerOfLastRound(gamestate.rounds.last())
         // Are you debugging?
@@ -91,21 +104,35 @@ class MyBot : Bot {
         // We're playerone
         val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
 
+        var ourMove: Move? = null
+        var sequenceLength = -1
+
         for (lookbackDistance in min(MAX_LOOKBACK, max(opponentsMoves.size-2, 1)) downTo 1) {
             val opponentsNextMove = predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance, opponentsMoves)
             if (opponentsNextMove == null) continue
 
             //println(lookbackDistance)
 
-            return when (opponentsNextMove) {
+
+            ourMove = when (opponentsNextMove) {
                 Move.S -> Move.R
                 Move.R -> Move.P
                 Move.P -> Move.S
                 Move.D -> Move.W
                 else -> Move.S
             }
+            sequenceLength = lookbackDistance
+            break
         }
 
+        var r = Random.nextDouble()
+
+        if (r < probToPlayDynamite(sequenceLength) && dynamiteRemaining > 0) {
+            dynamiteRemaining--
+            return Move.D
+        } else if (ourMove != null) {
+            return ourMove
+        }
         return Move.S
     }
 
