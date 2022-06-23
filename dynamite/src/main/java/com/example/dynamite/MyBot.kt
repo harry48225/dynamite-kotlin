@@ -18,10 +18,11 @@ class MyBot : Bot {
             val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
             // Look for mostRecentMoves in opponentsMoves
             for (i in 0..opponentsMoves.size-(lookbackDistance+1)) {
-
-                for (offset in 0 until lookbackDistance) {
-                    if (opponentsMoves[i+offset] != mostRecentMoves[offset]) break
+                var matchFound = true
+                for (offset in 0..(lookbackDistance-1)) {
+                    if (opponentsMoves[i+offset] != mostRecentMoves[offset]) matchFound =false
                 }
+                if (!matchFound) continue
 
                 val opponentsNextMove = opponentsMoves[i+lookbackDistance]
 
