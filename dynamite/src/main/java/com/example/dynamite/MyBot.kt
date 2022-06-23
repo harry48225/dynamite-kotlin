@@ -9,16 +9,23 @@ import java.lang.Integer.*
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.min
-import kotlin.random.Random
+
 
 class MyBot : Bot {
     val MAX_LOOKBACK = 20
     val RANDOM_THRESHOLD = 12
     var dynamiteRemaining = 100
     val MAX_DYNAMTIE_PROBABILITY = 1.0
+    val DYNAMITE_DRAW_OFFSET = 0.1
+    val DYNAMITE_DRAW_SCALING = 0.1
     var ourScore = 0
     var theirScore = 0
     var drawTally =  0
+
+    fun randomDouble(): Double {
+        val randomInt: Int = (1..10000).shuffled().first()
+        return randomInt / 10000.0
+    }
 
     fun probToPlayDynamite(sequenceLengthFound: Int): Double {
        val numberOfRoundsLeft = predictNumberOfRoundsLeft()
@@ -126,7 +133,7 @@ class MyBot : Bot {
             break
         }
 
-        var r = Random.nextDouble()
+        var r = randomDouble()
 
         if (r < probToPlayDynamite(sequenceLength) && dynamiteRemaining > 0) {
             dynamiteRemaining--
