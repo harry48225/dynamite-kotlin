@@ -9,9 +9,16 @@ import java.lang.Integer.*
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.collections.average
 
 
 class MyBot : Bot {
+
+    enum class Outcome {
+        WIN,
+        LOSE,
+        DRAW
+    }
     val MAX_LOOKBACK = 20
     val RANDOM_THRESHOLD = 12
     var dynamiteRemaining = 100
@@ -21,6 +28,11 @@ class MyBot : Bot {
     var ourScore = 0
     var theirScore = 0
     var drawTally =  0
+    var theirDynamite = 100
+
+    var opponentDrawLengthBeforeDynamite = listOf<Int>()
+
+    var outcomeLog = listOf<Outcome>()
 
     fun randomDouble(): Double {
         val randomInt: Int = (1..10000).shuffled().first()
@@ -35,7 +47,7 @@ class MyBot : Bot {
 
        val a = ((-2)*Math.log(baseProbability))/RANDOM_THRESHOLD
 
-        val probabilty = min(MAX_DYNAMTIE_PROBABILITY, exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
+        val probabilty = min(MAX_DYNAMTIE_PROBABILITY, (drawTally)*exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
 
         return probabilty
     }
@@ -47,8 +59,14 @@ class MyBot : Bot {
     }
 
     fun determineWinnerOfLastRound(outcome: Round) {
+        if (outcome.p2 == Move.D) theirDynamite --
+        if (outcome.p2 == Move.D && drawTally != 0) {
+            opponentDrawLengthBeforeDynamite += drawTally
+        }
+
         if (outcome.p1 == outcome.p2) {
             drawTally++
+            outcomeLog += Outcome.DRAW
             return
         }
 
@@ -65,21 +83,27 @@ class MyBot : Bot {
         for (winPair in winPairs) {
             if (outcome.p1 == winPair[0] && outcome.p2 == winPair[1]) {
                 ourScore += prize
+                outcomeLog += Outcome.WIN
                 return
             } else if (outcome.p2 == winPair[0] && outcome.p1 == winPair[1]) {
                 theirScore += prize
+                outcomeLog += Outcome.LOSE
                 return
             }
         }
 
         if (outcome.p1 == Move.W) {
             theirScore += prize
+            outcomeLog += Outcome.LOSE
         } else if (outcome.p2 == Move.W) {
             ourScore += prize
+            outcomeLog += Outcome.WIN
         } else if (outcome.p1 == Move.D) {
             ourScore += prize
+            outcomeLog += Outcome.WIN
         } else if (outcome.p2 == Move.D) {
             theirScore += prize
+            outcomeLog += Outcome.LOSE
         } else {
             throw Exception("We were wrong")
         }
@@ -111,6 +135,7 @@ class MyBot : Bot {
 
         // We're playerone
         val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
+        //val opponentsMoves = gamestate.rounds.flatMap { l }
 
         var ourMove: Move? = null
         var sequenceLength = -1
@@ -129,18 +154,38 @@ class MyBot : Bot {
                 Move.D -> Move.W
                 else -> Move.S
             }
+
+            if (ourMove == Move.W && theirDynamite == 0) continue
             sequenceLength = lookbackDistance
             break
         }
 
-        var r = randomDouble()
+//        var r = randomDouble()
+//
+//        if (r < probToPlayDynamite(sequenceLength) && dynamiteRemaining > 0) {
+//            dynamiteRemaining--
+//            return Move.D
+//        } else if (ourMove != null) {
+//            return ourMove
+//        }
 
-        if (r < probToPlayDynamite(sequenceLength) && dynamiteRemaining > 0) {
-            dynamiteRemaining--
-            return Move.D
-        } else if (ourMove != null) {
-            return ourMove
+        val mostCommonDrawLengthBeforeOpponentDynamite = opponentDrawLengthBeforeDynamite.average()
+
+        if (drawTally > 0) {
+            if (mostCommonDrawLengthBeforeOpponentDynamite < 1 && dynamiteRemaining > 0 && randomDouble() < 0.5) {
+                dynamiteRemaining--
+                return Move.D
+            }
+            else if (drawTally >= mostCommonDrawLengthBeforeOpponentDynamite && theirDynamite > 0) {
+                return Move.W
+            }
+            else if (drawTally <= mostCommonDrawLengthBeforeOpponentDynamite - 1 && dynamiteRemaining > 0) {
+                dynamiteRemaining--
+                return Move.D
+            }
         }
+
+        if (ourMove != null) return ourMove
         return Move.S
     }
 
