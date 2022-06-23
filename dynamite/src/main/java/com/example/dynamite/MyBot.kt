@@ -31,70 +31,59 @@ class MyBot : Bot {
     var theirDynamite = 100
 
     var opponentDrawLengthBeforeDynamite = listOf<Int>()
-    var drawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-    var opponentDynamiteByDrawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-    var opponentWaterByDrawLengthCount = mutableListOf(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-
+    var drawLengthCount = List(1000) {0}.toMutableList()
+    var opponentDynamiteByDrawLengthCount = List(1000) {0}.toMutableList()
+    var opponentWaterByDrawLengthCount = List(1000) {0}.toMutableList()
     var outcomeLog = listOf<Outcome>()
 
-    fun randomDouble(): Double {
+    private fun randomDouble(): Double {
         val randomInt: Int = (1..10000).shuffled().first()
         return randomInt / 10000.0
     }
 
-    fun probToPlayDynamite(sequenceLengthFound: Int): Double {
+    private fun probToPlayDynamite(): Double {
        val numberOfRoundsLeft = predictNumberOfRoundsLeft()
-
-       // Need to do draws
        val baseProbability = dynamiteRemaining.toDouble() / numberOfRoundsLeft
-
-       val a = ((-2)*Math.log(baseProbability))/RANDOM_THRESHOLD
-
-        val probabilty = min(MAX_DYNAMTIE_PROBABILITY, (drawTally)*exp(-a*(sequenceLengthFound - RANDOM_THRESHOLD/2)))
-
         return baseProbability
     }
 
-    fun predictNumberOfRoundsLeft(): Int {
+    private fun predictNumberOfRoundsLeft(): Int {
         val ourWinProportion = ourScore.toDouble() / (ourScore + theirScore)
         val theirWinProportion = theirScore.toDouble() / (ourScore + theirScore)
         return floor(min((1000-ourScore)/ourWinProportion, (1000-theirScore)/theirWinProportion)).toInt()
     }
 
-    fun determineWinnerOfLastRound(outcome: Round) {
-
-
-
+    private fun determineWinnerOfLastRound(outcome: Round) {
         if (outcome.p2 == Move.D) theirDynamite --
 
         if (outcome.p1 == outcome.p2) {
             drawTally++
             outcomeLog += Outcome.DRAW
             return
-        } else {
-            if (outcome.p2 == Move.D && drawTally != 0) {
-                opponentDrawLengthBeforeDynamite += drawTally
-                opponentDynamiteByDrawLengthCount[drawTally-1] += 1
-            }
-
-
-             if (drawTally > 0) {                                                               
-                 drawLengthCount[drawTally - 1] += 1                                            
-                                                                                                
-                 if (outcome.p2 == Move.W) opponentWaterByDrawLengthCount[drawTally-1] += 1     
-             }                                                                                  
-
         }
 
-        //println(predictNumberOfRoundsLeft() + ourScore + theirScore)
+        if (drawTally > 0) {
+            drawLengthCount[drawTally - 1] += 1
+
+            when (outcome.p2) {
+                Move.D -> {
+                    opponentDrawLengthBeforeDynamite += drawTally
+                    opponentDynamiteByDrawLengthCount[drawTally-1] += 1
+                }
+
+                Move.W -> opponentWaterByDrawLengthCount[drawTally-1] += 1
+            }
+        }
 
         val prize = 1 + drawTally
         drawTally = 0
 
-        val winPairs = listOf(listOf(Move.R, Move.S),
+        val winPairs = listOf(
+            listOf(Move.R, Move.S),
             listOf(Move.S, Move.P),
             listOf(Move.P, Move.R),
-            listOf(Move.W, Move.D))
+            listOf(Move.W, Move.D)
+        )
 
         for (winPair in winPairs) {
             if (outcome.p1 == winPair[0] && outcome.p2 == winPair[1]) {
@@ -125,13 +114,25 @@ class MyBot : Bot {
         }
     }
 
-    fun predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance: Int, opponentsMoves: List<Move>): Move? {
+    private fun randomMove(): Move {
+        return listOf(Move.R, Move.P, Move.S).shuffled().first()
+
+        if (randomDouble() < probToPlayDynamite()) return Move.D
+
+        val r = randomDouble()
+        if (r < 0.33) return Move.S
+        if (r < 0.66) return Move.R
+
+        return Move.P
+    }
+
+    private fun predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance: Int, opponentsMoves: List<Move>): Move? {
         if (opponentsMoves.size > lookbackDistance) {
             val mostRecentMoves = opponentsMoves.takeLast(lookbackDistance)
             // Look for mostRecentMoves in opponentsMoves
             for (i in 0..opponentsMoves.size-(lookbackDistance+1)) {
                 var matchFound = true
-                for (offset in 0..(lookbackDistance-1)) {
+                for (offset in 0 until lookbackDistance) {
                     if (opponentsMoves[i+offset] != mostRecentMoves[offset]) matchFound =false
                 }
                 if (!matchFound) continue
@@ -141,74 +142,46 @@ class MyBot : Bot {
         return null
     }
 
-    override fun makeMove(gamestate: Gamestate): Move {
-
-        //print(dynamiteRemaining.toString()+",")
-        // Determine winner of last round
-        if (gamestate.rounds.size > 0) determineWinnerOfLastRound(gamestate.rounds.last())
-        // Are you debugging?
-        // Put a breakpoint in this method to see when we make a move
-
-        // We're playerone
-        val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
-        //val opponentsMoves = gamestate.rounds.flatMap { l }
-
-        var ourMove: Move? = null
-        var sequenceLength = -1
-
+    private fun determineMoveByIncreasingSequenceLookback(opponentsMoves: List<Move>): Move? {
         for (lookbackDistance in min(MAX_LOOKBACK, max(opponentsMoves.size-2, 1)) downTo 1) {
             val opponentsNextMove = predictOpponentsNextMoveFromLookbackDistanceOf(lookbackDistance, opponentsMoves)
-            if (opponentsNextMove == null) continue
 
-            //println(lookbackDistance)
-
-
-            ourMove = when (opponentsNextMove) {
+            val ourMove = when (opponentsNextMove) {
                 Move.S -> Move.R
                 Move.R -> Move.P
                 Move.P -> Move.S
-                else -> Move.S
+                Move.D -> Move.W
+                else -> null
             }
 
             if (ourMove == Move.W && theirDynamite == 0) continue
-            sequenceLength = lookbackDistance
-            break
+
+            return ourMove
         }
+        return null
+    }
 
-        val mostCommonDrawLengthBeforeOpponentDynamite = opponentDrawLengthBeforeDynamite.average()
-
-        if (drawTally > 0 && sequenceLength < 20) {
-            if (mostCommonDrawLengthBeforeOpponentDynamite < 1 && dynamiteRemaining > 0 && randomDouble() < 0.5) {
+    private fun determineMoveByDrawTally(): Move? {
+        if (dynamiteRemaining > 0 && opponentWaterByDrawLengthCount[drawTally-1]/(drawLengthCount[drawTally-1]+0.00001) < randomDouble()) {
                 dynamiteRemaining--
                 return Move.D
-            }
-            else if (opponentDynamiteByDrawLengthCount[drawTally - 1]/(drawLengthCount[drawTally - 1]+0.00001) > randomDouble() && theirDynamite > 0) {
+        } else if (theirDynamite > 0 && opponentDynamiteByDrawLengthCount[drawTally - 1]/(drawLengthCount[drawTally - 1]+0.00001) > randomDouble()) {
                 return Move.W
-            }
-            else if (dynamiteRemaining > 0 && opponentWaterByDrawLengthCount[drawTally-1]/(drawLengthCount[drawTally-1]+0.00001) < randomDouble()){
-                dynamiteRemaining--
-                return Move.D
-            }
-//            else if (drawTally <= mostCommonDrawLengthBeforeOpponentDynamite - 1 && dynamiteRemaining > 0) {
-//                dynamiteRemaining--
-//                return Move.D
-//            }
-        } else if (randomDouble() <= probToPlayDynamite(sequenceLength)/4 && dynamiteRemaining > 0){
-            dynamiteRemaining--;
-            return Move.D
         }
+        return null
+    }
 
+    override fun makeMove(gamestate: Gamestate): Move {
+        if (gamestate.rounds.size > 0) determineWinnerOfLastRound(gamestate.rounds.last())
 
+        // We're player one
+        val opponentsMoves = gamestate.rounds.map { it.p2 }.toList()
 
+        var ourMove = determineMoveByIncreasingSequenceLookback(opponentsMoves)
+        if (drawTally > 0 && ourMove == null) ourMove = determineMoveByDrawTally()
+        if (ourMove == null) ourMove = randomMove()
 
-        if (ourMove != null) return ourMove
-
-        val r = randomDouble()
-        if (r < 0.33) return Move.S
-        if (r < 0.66) return Move.R
-        if (r < 1) return Move.P
-
-        return Move.S
+        return ourMove
     }
 
     init {
